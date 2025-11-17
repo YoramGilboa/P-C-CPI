@@ -1,0 +1,11 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Secrets
+.env
+
+# Data (regenerated)
+data/raw/*
+data/processed/*

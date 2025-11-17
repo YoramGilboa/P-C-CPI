@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>P&C Severity CPI: Open Source</title>
+  <style>body{font-family:Arial; max-width:900px; margin:auto; padding:20px;}</style>
+</head>
+<body>
+  <h1>How CPI Drives P&C Insurance Severity</h1>
+  <p><em>Transparent, reproducible, auto-updated monthly.</em></p>
+
+  <h2>1. The P&C-Relevant CPI</h2>
+  <img src="assets/severity_vs_cpi.png" width="100%">
+
+  <h2>2. How It's Built</h2>
+  <pre><code>I_t = Σ w_i * (CPI_i,t / CPI_i,2010)</code></pre>
+
+  <h2>3. Weights (Edit data/weights.csv)</h2>
+  <table border="1" cellpadding="5">
+    <tr><th>Category</th><th>Series</th><th>Weight</th></tr>
+    <tr><td>Auto Repair</td><td>CUUR0000SETA</td><td>20%</td></tr>
+    <!-- Add more -->
+  </table>
+
+  <h2>4. Code</h2>
+  <p>See <a href="https://github.com/stoXasti/p&c-cpi-blog">GitHub repo</a></p>
+
+  <p><small>Updated: <span id="date"></span></small></p>
+  <script>document.getElementById("date").innerText = new Date().toLocaleDateString();</script>
+</body>
+</html>
