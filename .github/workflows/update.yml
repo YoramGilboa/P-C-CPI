@@ -1,0 +1,46 @@
+name: Monthly CPI Update
+
+on:
+  schedule:
+    - cron: '0 12 15 * *'  # 15th of each month at noon UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run update scripts
+      env:
+        BLS_API_KEY: ${{ secrets.BLS_API_KEY }}
+      run: |
+        python src/01_fetch_bls.py
+        python src/03_build_index.py
+        python src/04_plot.py
+
+    - name: Commit changes
+      run: |
+        git config user.email "action@github.com"
+        git config user.name "GitHub Action"
+        git add blog/assets/
+        git diff --staged --quiet || git commit -m "chore: monthly CPI update $(date +'%Y-%m')"
+        git push
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./blog
