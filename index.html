@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P&C Severity CPI: A Claims-Weighted Inflation Index</title>
+  <style>
+    :root {
+      --primary: #1e3a5f;
+      --accent: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #334155;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    header p {
+      opacity: 0.9;
+      font-size: 1rem;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .metric-value.accent { color: var(--accent); }
+    .metric-label {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+    .metric-sublabel {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+    h3 {
+      font-size: 1.1rem;
+      color: var(--primary);
+      margin: 1.25rem 0 0.75rem;
+    }
+    p { margin-bottom: 1rem; }
+    .chart-container {
+      width: 100%;
+      margin: 1rem 0;
+    }
+    .chart-container iframe {
+      width: 100%;
+      height: 520px;
+      border: none;
+    }
+    .formula {
+      background: #f1f5f9;
+      border-left: 4px solid var(--primary);
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-family: 'Courier New', monospace;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    tr:hover { background: #f8fafc; }
+    .weight { font-weight: 600; color: var(--accent); }
+    ul, ol {
+      margin: 1rem 0;
+      padding-left: 1.5rem;
+    }
+    li { margin-bottom: 0.5rem; }
+    .interpretation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .interp-card {
+      padding: 1rem;
+      border-radius: 6px;
+      border-left: 4px solid;
+    }
+    .interp-card.green { background: #f0fdf4; border-color: #22c55e; }
+    .interp-card.yellow { background: #fefce8; border-color: #eab308; }
+    .interp-card.orange { background: #fff7ed; border-color: #f97316; }
+    .interp-card.red { background: #fef2f2; border-color: #ef4444; }
+    .interp-card strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    code {
+      background: #f1f5f9;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      margin: 1rem 0;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 0.875rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    a { color: var(--primary); }
+    .lob-table td:first-child { font-weight: 600; }
+    @media (max-width: 600px) {
+      .metric-value { font-size: 1.5rem; }
+      header h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>P&C Severity CPI</h1>
+      <p>A claims-weighted inflation index for Property & Casualty insurance actuaries</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Dynamic Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-value accent" id="severity-value">--</div>
+        <div class="metric-label">P&C Severity CPI</div>
+        <div class="metric-sublabel">Jan 2010 = 100</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="yoy-change">--</div>
+        <div class="metric-label">YoY Change</div>
+        <div class="metric-sublabel">Severity Index</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value" id="cpi-value">--</div>
+        <div class="metric-label">CPI-U Index</div>
+        <div class="metric-sublabel">Jan 2010 = 100</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value accent" id="gap-value">--</div>
+        <div class="metric-label">Gap vs CPI-U</div>
+        <div class="metric-sublabel">Index Points</div>
+      </div>
+    </div>
+
+    <!-- Chart Section -->
+    <section>
+      <h2>P&C Severity CPI vs CPI-U</h2>
+      <div class="chart-container">
+        <iframe src="assets/severity_vs_cpi.html" title="P&C Severity CPI Chart"></iframe>
+      </div>
+      <p style="font-size: 0.875rem; color: var(--muted);">
+        The red dotted line shows the P&C-weighted severity index. The blue line shows CPI-U (all items).
+        When the gap widens, claims inflation is outpacing general inflation.
+      </p>
+    </section>
+
+    <!-- Methodology -->
+    <section>
+      <h2>Methodology</h2>
+
+      <h3>Why a Custom Index?</h3>
+      <p>
+        The standard CPI-U basket significantly underweights cost components that drive P&C claims severity.
+        For example, CPI-U assigns only ~6% weight to medical care, while bodily injury claims can be
+        30-50% of auto liability losses. Similarly, shelter (used as a proxy for construction costs)
+        receives ~33% in CPI-U but may not reflect the specific materials and labor mix in property claims.
+      </p>
+      <p>
+        This index reweights CPI components to better approximate the inflation experienced in
+        P&C claims payments, making it more suitable for loss trending and rate adequacy analysis.
+      </p>
+
+      <h3>Index Formula</h3>
+      <div class="formula">
+        P&C_CPI(t) = &Sigma; w<sub>i</sub> &times; (CPI<sub>i</sub>(t) / CPI<sub>i</sub>(2010)) &times; 100
+      </div>
+      <p>Where:</p>
+      <ul>
+        <li><strong>w<sub>i</sub></strong> = weight assigned to component i (summing to 1.0)</li>
+        <li><strong>CPI<sub>i</sub>(t)</strong> = BLS CPI index value for component i at time t</li>
+        <li><strong>CPI<sub>i</sub>(2010)</strong> = BLS CPI index value for component i in January 2010 (base period)</li>
+      </ul>
+
+      <h3>Base Period Selection</h3>
+      <p>
+        January 2010 was selected as the base period for several reasons:
+      </p>
+      <ul>
+        <li>Post-2008 financial crisis stabilization</li>
+        <li>Pre-pandemic baseline (avoids COVID-era distortions)</li>
+        <li>Aligns with common actuarial experience periods</li>
+        <li>Provides 15+ years of observable trend data</li>
+      </ul>
+    </section>
+
+    <!-- Weight Table -->
+    <section>
+      <h2>Index Weights</h2>
+      <p>
+        Weights are assigned based on typical P&C loss cost composition across major lines of business.
+        These can be customized in <code>data/weights.csv</code> for specific portfolios.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>BLS Series</th>
+            <th>Weight</th>
+            <th>P&C Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Auto Repair</td>
+            <td>CUUR0000SETA</td>
+            <td class="weight">20%</td>
+            <td>Parts, labor, glass, paint for auto PD and collision claims</td>
+          </tr>
+          <tr>
+            <td>Physicians</td>
+            <td>CUUR0000SEMC</td>
+            <td class="weight">15%</td>
+            <td>Medical evaluations, IMEs, treatment costs in BI claims</td>
+          </tr>
+          <tr>
+            <td>Hospital</td>
+            <td>CUUR0000SEMD</td>
+            <td class="weight">15%</td>
+            <td>Inpatient costs for severe bodily injury claims</td>
+          </tr>
+          <tr>
+            <td>Shelter</td>
+            <td>CUUR0000SAH1</td>
+            <td class="weight">20%</td>
+            <td>Proxy for construction/rebuild costs (lumber, labor, materials)</td>
+          </tr>
+          <tr>
+            <td>Core CPI (Wages)</td>
+            <td>CUUR0000SA0L1E</td>
+            <td class="weight">15%</td>
+            <td>Legal fees, adjusters, administrative costs</td>
+          </tr>
+          <tr>
+            <td>Core CPI (General)</td>
+            <td>CUUR0000SA0L1E</td>
+            <td class="weight">15%</td>
+            <td>Residual services, general inflation exposure</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Line of Business Mapping -->
+    <section>
+      <h2>Line of Business Applications</h2>
+      <p>
+        Different P&C lines have varying exposure to index components. Consider these mappings
+        when applying the index to specific portfolios:
+      </p>
+      <table class="lob-table">
+        <thead>
+          <tr>
+            <th>Line of Business</th>
+            <th>Primary Cost Drivers</th>
+            <th>Suggested Focus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Personal Auto Liability</td>
+            <td>Physicians, Hospital, Auto Repair</td>
+            <td>Medical + repair inflation; consider legal cost trends separately</td>
+          </tr>
+          <tr>
+            <td>Personal Auto PD</td>
+            <td>Auto Repair</td>
+            <td>Parts/labor inflation; OEM parts pricing may diverge from CPI</td>
+          </tr>
+          <tr>
+            <td>Homeowners</td>
+            <td>Shelter, Core CPI</td>
+            <td>Construction costs; regional variation significant</td>
+          </tr>
+          <tr>
+            <td>Workers' Compensation</td>
+            <td>Physicians, Hospital, Core CPI</td>
+            <td>Medical inflation + wage replacement; state fee schedules matter</td>
+          </tr>
+          <tr>
+            <td>Commercial Property</td>
+            <td>Shelter</td>
+            <td>Construction/materials; consider commercial vs residential differences</td>
+          </tr>
+          <tr>
+            <td>General Liability</td>
+            <td>Physicians, Hospital, Core CPI</td>
+            <td>BI-driven; social inflation not captured in CPI</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Interpretation Guide -->
+    <section>
+      <h2>Interpretation Guide</h2>
+      <p>
+        The gap between the P&C Severity CPI and CPI-U indicates how much claims inflation
+        diverges from general economic inflation. Use these thresholds as guidelines:
+      </p>
+      <div class="interpretation-grid">
+        <div class="interp-card green">
+          <strong>&lt; 2 points gap</strong>
+          CPI-U adequate for loss trending. Standard inflation assumptions reasonable.
+        </div>
+        <div class="interp-card yellow">
+          <strong>2-5 points gap</strong>
+          Consider P&C-specific factors in rate filings. Document deviation from CPI-U.
+        </div>
+        <div class="interp-card orange">
+          <strong>5-10 points gap</strong>
+          Claims inflation likely outpacing filed rates. Review trend assumptions.
+        </div>
+        <div class="interp-card red">
+          <strong>&gt; 10 points gap</strong>
+          Urgent pricing review needed. Significant rate inadequacy risk.
+        </div>
+      </div>
+      <p>
+        <strong>Important caveats:</strong> This index does not capture social inflation,
+        litigation trends, regulatory changes, or frequency shifts. It measures only the
+        economic inflation component of severity. Always supplement with loss development
+        analysis and market-specific data.
+      </p>
+    </section>
+
+    <!-- Technical Documentation -->
+    <section>
+      <h2>Technical Documentation</h2>
+
+      <h3>Data Pipeline</h3>
+      <ol>
+        <li><strong>Fetch</strong> (<code>01_fetch_bls.py</code>): Retrieves CPI data from BLS API v2</li>
+        <li><strong>Build</strong> (<code>03_build_index.py</code>): Applies weights and calculates index</li>
+        <li><strong>Plot</strong> (<code>04_plot.py</code>): Generates visualizations and exports metrics</li>
+      </ol>
+
+      <h3>Data Source</h3>
+      <p>
+        All CPI data comes from the <a href="https://www.bls.gov/developers/" target="_blank">Bureau of Labor Statistics API v2</a>.
+        Data is seasonally unadjusted (SA0 prefix in series IDs) to avoid BLS seasonal adjustment methodology
+        potentially masking P&C-relevant patterns.
+      </p>
+
+      <h3>Running Locally</h3>
+      <pre># Clone and setup
+git clone https://github.com/YoramGilboa/p-c-cpi-blog
+cd p-c-cpi-blog
+
+# Create .env file with your BLS API key
+echo "BLS_API_KEY=your_key_here" > .env
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the pipeline
+python src/01_fetch_bls.py
+python src/03_build_index.py
+python src/04_plot.py</pre>
+
+      <h3>Customization</h3>
+      <p>
+        To adjust weights for your specific portfolio, edit <code>data/weights.csv</code>.
+        Ensure weights sum to 1.0. After editing, rerun <code>03_build_index.py</code> and
+        <code>04_plot.py</code> to regenerate outputs.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Data updated: <span id="last-updated">--</span><br>
+      Source: Bureau of Labor Statistics |
+      <a href="https://github.com/YoramGilboa/p-c-cpi-blog" target="_blank">GitHub Repository</a><br>
+      <small>This index is provided for educational and analytical purposes.
+      Consult qualified actuaries for rate filing decisions.</small>
+    </p>
+  </footer>
+
+  <script>
+    // Load metrics from JSON
+    fetch('assets/severity_data.json')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('severity-value').textContent = data.current_severity.toFixed(1);
+        document.getElementById('cpi-value').textContent = data.current_cpi.toFixed(1);
+        document.getElementById('yoy-change').textContent =
+          (data.yoy_severity_change >= 0 ? '+' : '') + data.yoy_severity_change.toFixed(1) + '%';
+        document.getElementById('gap-value').textContent =
+          (data.gap >= 0 ? '+' : '') + data.gap.toFixed(1);
+        document.getElementById('last-updated').textContent = data.last_date;
+      })
+      .catch(err => {
+        console.error('Failed to load metrics:', err);
+        document.getElementById('last-updated').textContent = 'Data unavailable';
+      });
+  </script>
+</body>
+</html>
